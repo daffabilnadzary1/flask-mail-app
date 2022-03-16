@@ -1,5 +1,6 @@
 from flask import Flask, render_template, url_for
 from flask_mail import Mail, Message
+from apps.models.model import MessageQuery
 
 app = Flask(__name__)
 
@@ -10,8 +11,8 @@ app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 #app.config['MAIL_DEBUG'] = True
-app.config['MAIL_USERNAME'] = None
-app.config['MAIL_PASSWORD'] = None
+app.config['MAIL_USERNAME'] = 'daffabilnadzary1@gmail.com'
+app.config['MAIL_PASSWORD'] = 'jctwpcjsizzapyub'
 app.config['MAIL_DEFAULT_SENDER'] = None
 app.config['MAIL_MAX_EMAILS'] = None
 #app.config['MAIL_SUPPRESS_SEND'] = False
@@ -21,21 +22,20 @@ mail = Mail(app)
 s = URLSafeTimedSerializer('tokenrandomizer')
 
 @app.route("/email_confirmation", methods = ["GET", "POST"])
-def index():
-    if request.method == 'GET':
-        return '<form action = "/" method = "POST"><input name = "email"><input type = "submit"></form>'
+def index(message_query: MessageQuery):
+    # if request.method == 'GET':
+    #     return '<form action = "/" method = "POST"><input name = "email"><input type = "submit"></form>'
     
-    email = request.form['email']
-    token = s.dumps(email, salt = 'email-confirm')
+    # email = request.form['email']
+    # token = s.dumps(email, salt = 'email-confirm')
 
     msg = Message(
-        subject = 'Email Confirmation',
-        recipients = '',
-        html = 'Your activation link is {}'.format(link),
-        sender = '',
-        cc = [],
-        bcc = [],
-        attachments = []
+        subject = message_query.subject,
+        recipients = message_query.recipients,
+        #html = 'Your activation link is {}'.format(link),
+        html = message_query.html.format(link),
+        sender = message_query.sender,
+        #attachments = message_query.attachments
     )
 
     link = url_for('confirm_email', token = token, _external = True)
