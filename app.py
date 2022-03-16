@@ -32,15 +32,15 @@ def index():
     message_query = MessageQuery()
 
     message_query.subject = request.json['subject']
-    message_query.recipients = "rafiyev226@songsign.com"
+    message_query.recipients = request.json['recipients']
     message_query.html = request.json['html']
     message_query.sender = request.json['sender']
 
-    token = s.dumps(message_query.recipients, salt = 'email-confirm')
+    token = s.dumps(message_query.recipients[0], salt = 'email-confirm')
     link = url_for('confirm_email', token = token, _external = True)
     msg = Message(
         subject = message_query.subject,
-        recipients = ["rafiyev226@songsign.com"],
+        recipients = message_query.recipients,
         #html = 'Your activation link is {}'.format(link),
         html = message_query.html.format(link),
         sender = message_query.sender,
