@@ -4,6 +4,7 @@ from apps.models.model import MessageQuery, TokenQuery
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
 from apps.controllers.mail_controller import generate_mail, generate_token
+import json
 
 app = Flask(__name__)
 
@@ -20,6 +21,7 @@ app.config['MAIL_MAX_EMAILS'] = None
 app.config['MAIL_ASCII_ATTACHMENTS'] = False
 
 mail = Mail(app)
+s = URLSafeTimedSerializer('tokenrandomizer')
 
 @app.route("/email_confirmation", methods = ["GET", "POST"])
 def index():
@@ -30,12 +32,11 @@ def index():
     message_query.recipients = request.json['recipients']
     message_query.html = request.json['html']
     message_query.sender = request.json['sender']
-    #message_query.cc = request.json['cc']
-    #message_query.bcc = request.json['bcc']
-    #message_query.attachments = request.json['attachments']
+    message_query.cc = (None if request.json["cc"] is 0 else request.json["cc"])
+    message_query.bcc = (None if request.json["bcc"] is 0 else request.json["bcc"])
+    message_query.attachments = (None if request.json["attachments"] is 0 else request.json["attachments"])
 
     token_query.age = request.json['age']
-    s = URLSafeTimedSerializer('tokenrandomizer')
     token = generate_token(message_query.recipients)
 
     #link = url_for('confirm_email', token = token, _external = True)
@@ -47,9 +48,9 @@ def index():
         #html = 'Your activation link is {}'.format(link),
         html = message_query.html,
         sender = message_query.sender,
-        #attachments = message_query.attachments,
-        #cc = message_query.cc,
-        #bcc = message_query.bcc
+        attachments = message_query.attachments,
+        cc = message_query.cc,
+        bcc = message_query.bcc
     )
     
     return '<h1>The email you entered is {}. The token is {}'.format(message_query.recipients, token)
