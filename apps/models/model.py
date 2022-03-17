@@ -6,6 +6,6 @@ class MessageQuery(BaseModel):
     sender: str = ''
     recipients: list = None
     html: str = ''
-    #cc: list
-    #bcc: list 
-    #attachments: list
+    cc: list = None
+    bcc: list = None
+    attachments: list = None

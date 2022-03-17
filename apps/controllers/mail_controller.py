@@ -1,71 +1,113 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, request
 from flask_mail import Mail, Message
-from apps.models.model import MessageQuery
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
-app = Flask(__name__)
+def render_account_confirm(email, link):
+    return render_template('account_confirmation.html', email = email, link =  link)
 
-app.config['DEBUG'] = True
-app.config['TESTING'] = False
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-#app.config['MAIL_DEBUG'] = True
-app.config['MAIL_USERNAME'] = 'daffabilnadzary1@gmail.com'
-app.config['MAIL_PASSWORD'] = 'jctwpcjsizzapyub'
-app.config['MAIL_DEFAULT_SENDER'] = None
-app.config['MAIL_MAX_EMAILS'] = None
-#app.config['MAIL_SUPPRESS_SEND'] = False
-app.config['MAIL_ASCII_ATTACHMENTS'] = False
+def render_reset_password(email, link):
+    return render_template('reset_password.html', email = email, link =  link)
 
-mail = Mail(app)
-s = URLSafeTimedSerializer('tokenrandomizer')
+def generate_token(recipients):
+    if len(recipients) == 1:
+        s = URLSafeTimedSerializer('tokenrandomizer')
+        token = s.dumps(recipients[0], salt = 'email-confirm')
+    elif len(recipients) > 1:
+        s = URLSafeTimedSerializer('tokenrandomizer')
+        token = []
+        for rec in recipients:
+            unique_token = s.dumps(rec, salt = 'email-confirm')
+            token.append(unique_token)
+    return token
 
-@app.route("/email_confirmation", methods = ["GET", "POST"])
-def index(message_query: MessageQuery):
-    # if request.method == 'GET':
-    #     return '<form action = "/" method = "POST"><input name = "email"><input type = "submit"></form>'
-    
-    # email = request.form['email']
-    # token = s.dumps(email, salt = 'email-confirm')
+def bulk(type, mail, token, **kwargs):
+    if type == "account_confirmation":
+        with mail.connect() as conn:
+            i = 0
+            for rec in kwargs["recipients"]:
+                link = url_for('confirm_email', token = token[i], _external = True)
+                msg = Message(
+                    subject = kwargs["subject"],
+                    recipients = [rec],
+                    #html = 'Your activation link is {}'.format(link),
+                    html = render_account_confirm(email = rec, link = link),
+                    sender = kwargs["sender"],
+                    attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
+                    cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),
+                    bcc = (kwargs["bcc"] if kwargs["attachments"] is not None else None)
+                )
+                mail.send(msg)
+                i += 1
+    elif type == "reset_password":
+        with mail.connect() as conn:
+            i = 0
+            for rec in kwargs["recipients"]:
+                link = url_for('confirm_email', token = token[i], _external = True)
+                msg = Message(
+                    subject = kwargs["subject"],
+                    recipients = [rec],
+                    #html = 'Your activation link is {}'.format(link),
+                    html = render_reset_password(email = rec, link = link),
+                    sender = kwargs["sender"],
+                    attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
+                    cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),
+                    bcc = (kwargs["bcc"] if kwargs["attachments"] is not None else None)
+                )
+                mail.send(msg)
+                i += 1
 
-    msg = Message(
-        subject = message_query.subject,
-        recipients = message_query.recipients,
-        #html = 'Your activation link is {}'.format(link),
-        html = message_query.html.format(link),
-        sender = message_query.sender,
-        #attachments = message_query.attachments
-    )
+def generate_mail(type, mail, token, **kwargs):
+    if type == "account_confirmation":
+        if len(kwargs["recipients"]) == 1:
+            link = url_for('confirm_email', token = token, _external = True)
+            msg = Message(
+                subject = kwargs["subject"],
+                recipients = kwargs["recipients"],
+                html = render_account_confirm(email = kwargs["recipients"], link = link),
+                sender = kwargs["sender"],
+                attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
+                cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),
+                bcc = (kwargs["bcc"] if kwargs["attachments"] is not None else None)
+            )
+            mail.send(msg)
 
-    link = url_for('confirm_email', token = token, _external = True)
-    mail.send(msg)
-    
-    return '<h1>The email you entered is {}. The token is {}'.format(email, token)
+        elif len(kwargs["recipients"]) > 1:
+            bulk(
+                type = "account_confirmation",
+                mail = mail,
+                token = token, 
+                subject = kwargs["subject"],
+                recipients = kwargs["recipients"],
+                #html = kwargs["html"],
+                sender = kwargs["sender"],
+                attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
+                cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),
+                bcc = (kwargs["bcc"] if kwargs["attachments"] is not None else None)
+            )
+    elif type == "reset_password":
+        if len(kwargs["recipients"]) == 1:
+            link = url_for('confirm_email', token = token, _external = True)
+            msg = Message(
+                subject = kwargs["subject"],
+                recipients = kwargs["recipients"],
+                html = render_reset_password(email = kwargs["recipients"], link = link),
+                sender = kwargs["sender"],
+                attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
+                cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),
+                bcc = (kwargs["bcc"] if kwargs["attachments"] is not None else None)
+            )
+            mail.send(msg)
 
-@app.route('/confirm_email/<token>')
-def confirm_email(token):
-    try:
-        email = s.loads(token, salt = 'email-confirm', max_age = 3600)
-
-    except SignatureExpired:
-        return '<h1>The token is expired!</h1>'
-    
-    except BadTimeSignature:
-        return '<h1>The token is incorrect!</h1>'
-
-    return 'The token works!'
-
-
-@app.route("/bulk")
-def bulk():
-    users = [{'name': 'Anthony', 'email': 'email@email.com'}]
-
-    with mail.connect() as conn:
-        for user in users:
-            msg = Message('Bulk!', recipients = [user['email']])
-            msg.body('Hey There!')
-            conn.send(msg)
-
-if __name__ == "__main__":
-    app.run(debug = True)
+        elif len(kwargs["recipients"]) > 1:
+            bulk(
+                type = "reset_password",
+                mail = mail,
+                token = token, 
+                subject = kwargs["subject"],
+                recipients = kwargs["recipients"],
+                #html = kwargs["html"],
+                sender = kwargs["sender"],
+                attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
+                cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),
+                bcc = (kwargs["bcc"] if kwargs["attachments"] is not None else None)
+            )
