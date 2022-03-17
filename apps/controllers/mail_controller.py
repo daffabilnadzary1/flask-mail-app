@@ -1,71 +1,45 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, request
 from flask_mail import Mail, Message
-from apps.models.model import MessageQuery
 
-app = Flask(__name__)
-
-app.config['DEBUG'] = True
-app.config['TESTING'] = False
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-#app.config['MAIL_DEBUG'] = True
-app.config['MAIL_USERNAME'] = 'daffabilnadzary1@gmail.com'
-app.config['MAIL_PASSWORD'] = 'jctwpcjsizzapyub'
-app.config['MAIL_DEFAULT_SENDER'] = None
-app.config['MAIL_MAX_EMAILS'] = None
-#app.config['MAIL_SUPPRESS_SEND'] = False
-app.config['MAIL_ASCII_ATTACHMENTS'] = False
-
-mail = Mail(app)
-s = URLSafeTimedSerializer('tokenrandomizer')
-
-@app.route("/email_confirmation", methods = ["GET", "POST"])
-def index(message_query: MessageQuery):
-    # if request.method == 'GET':
-    #     return '<form action = "/" method = "POST"><input name = "email"><input type = "submit"></form>'
-    
-    # email = request.form['email']
-    # token = s.dumps(email, salt = 'email-confirm')
-
-    msg = Message(
-        subject = message_query.subject,
-        recipients = message_query.recipients,
-        #html = 'Your activation link is {}'.format(link),
-        html = message_query.html.format(link),
-        sender = message_query.sender,
-        #attachments = message_query.attachments
-    )
-
-    link = url_for('confirm_email', token = token, _external = True)
-    mail.send(msg)
-    
-    return '<h1>The email you entered is {}. The token is {}'.format(email, token)
-
-@app.route('/confirm_email/<token>')
-def confirm_email(token):
-    try:
-        email = s.loads(token, salt = 'email-confirm', max_age = 3600)
-
-    except SignatureExpired:
-        return '<h1>The token is expired!</h1>'
-    
-    except BadTimeSignature:
-        return '<h1>The token is incorrect!</h1>'
-
-    return 'The token works!'
-
-
-@app.route("/bulk")
-def bulk():
-    users = [{'name': 'Anthony', 'email': 'email@email.com'}]
+def bulk(subject, recipients, html, sender, attachments, cc, bcc):
 
     with mail.connect() as conn:
-        for user in users:
-            msg = Message('Bulk!', recipients = [user['email']])
-            msg.body('Hey There!')
-            conn.send(msg)
+        for rec in recipients:
+            msg = Message(
+                subject = subject,
+                recipients = [rec],
+                #html = 'Your activation link is {}'.format(link),
+                html = html.format(link),
+                sender = sender,
+                attachments = attachments,
+                cc = cc,
+                bcc = bcc
+            )
 
-if __name__ == "__main__":
-    app.run(debug = True)
+    return msg
+
+def generate_mail(subject, recipients, html, sender, attachments, cc, bcc):
+    if len(message_query.recipients) == 1:
+        msg = Message(
+            subject = subject,
+            recipients = recipients,
+            #html = 'Your activation link is {}'.format(link),
+            html = html.format(link),
+            sender = sender,
+            attachments = attachments,
+            cc = cc,
+            bcc = bcc
+        )
+    elif len(message_query.recipients) > 1:
+        msg = bulk(
+            subject = subject,
+            recipients = recipients,
+            #html = 'Your activation link is {}'.format(link),
+            html = html.format(link),
+            sender = sender,
+            attachments = attachments,
+            cc = cc,
+            bcc = bcc
+        )
+        
+    return msg
