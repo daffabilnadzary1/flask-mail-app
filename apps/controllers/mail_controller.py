@@ -2,6 +2,12 @@ from flask import Flask, render_template, url_for, request
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
+def render_html(type, email, link):
+    if type == "account_confirmation":
+        return render_template('account_confirmation.html', email = email, link =  link)
+    elif type == "reset_password":
+        return render_template('apps/templates/account_confirmation.html')
+
 def generate_token(recipients):
     if len(recipients) == 1:
         s = URLSafeTimedSerializer('tokenrandomizer')
@@ -15,7 +21,6 @@ def generate_token(recipients):
     return token
 
 def bulk(mail, token, **kwargs):
-
     with mail.connect() as conn:
         i = 0
         for rec in kwargs["recipients"]:
@@ -24,7 +29,7 @@ def bulk(mail, token, **kwargs):
                 subject = kwargs["subject"],
                 recipients = [rec],
                 #html = 'Your activation link is {}'.format(link),
-                html = kwargs["html"].format(link),
+                html = render_html(type = "account_confirmation", email = rec, link = link),
                 sender = kwargs["sender"],
                 attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
                 cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),
@@ -33,40 +38,13 @@ def bulk(mail, token, **kwargs):
             mail.send(msg)
             i += 1
 
-# def generate_mail(mail, token, subject, recipients, html, sender):
-#     if len(recipients) == 1:
-#         link = url_for('confirm_email', token = token, _external = True)
-#         msg = Message(
-#             subject = subject,
-#             recipients = recipients,
-#             html = html.format(link),
-#             sender = sender,
-#             # attachments = attachments,
-#             # cc = cc,
-#             # bcc = bcc
-#         )
-#         mail.send(msg)
-
-#     elif len(recipients) > 1:
-#         bulk(
-#             mail,
-#             token, 
-#             subject = subject,
-#             recipients = recipients,
-#             html = html,
-#             sender = sender,
-#             # attachments = attachments,
-#             # cc = cc,
-#             # bcc = bcc
-#         )    
-
 def generate_mail(mail, token, **kwargs):
     if len(kwargs["recipients"]) == 1:
         link = url_for('confirm_email', token = token, _external = True)
         msg = Message(
             subject = kwargs["subject"],
             recipients = kwargs["recipients"],
-            html = kwargs["html"].format(link),
+            html = render_html(type = "account_confirmation", email = kwargs["recipients"], link = link),
             sender = kwargs["sender"],
             attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
             cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),
@@ -80,7 +58,7 @@ def generate_mail(mail, token, **kwargs):
             token, 
             subject = kwargs["subject"],
             recipients = kwargs["recipients"],
-            html = kwargs["html"],
+            #html = kwargs["html"],
             sender = kwargs["sender"],
             attachments = (kwargs["attachments"] if kwargs["attachments"] is not None else None),
             cc = (kwargs["cc"] if kwargs["attachments"] is not None else None),

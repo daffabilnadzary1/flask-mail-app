@@ -6,7 +6,7 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignat
 from apps.controllers.mail_controller import generate_mail, generate_token
 import json
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder = 'apps/templates')
 
 app.config['DEBUG'] = True
 app.config['TESTING'] = False
@@ -30,7 +30,7 @@ def index():
 
     message_query.subject = request.json['subject']
     message_query.recipients = request.json['recipients']
-    message_query.html = request.json['html']
+    message_query.html = (None if request.json["html"] is 0 else request.json["html"])
     message_query.sender = request.json['sender']
     message_query.cc = (None if request.json["cc"] is 0 else request.json["cc"])
     message_query.bcc = (None if request.json["bcc"] is 0 else request.json["bcc"])
