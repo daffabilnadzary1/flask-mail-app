@@ -2,11 +2,11 @@ from flask import Flask, render_template, url_for, request
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
-def render_html(type, email, link):
-    if type == "account_confirmation":
-        return render_template('account_confirmation.html', email = email, link =  link)
-    elif type == "reset_password":
-        return render_template('apps/templates/account_confirmation.html')
+def render_account_confirm(email, link):
+    return render_template('account_confirmation.html', email = email, link =  link)
+
+def render_reset_password(email, link):
+    return render_template('reset_password.html', email = email, link =  link)
 
 def generate_token(recipients):
     if len(recipients) == 1:

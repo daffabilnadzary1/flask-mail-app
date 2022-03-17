@@ -9,6 +9,3 @@ class MessageQuery(BaseModel):
     cc: list = None
     bcc: list = None
     attachments: list = None
-
-class TokenQuery(BaseModel):
-    age: int = 60

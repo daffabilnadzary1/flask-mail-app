@@ -23,10 +23,9 @@ app.config['MAIL_ASCII_ATTACHMENTS'] = False
 mail = Mail(app)
 s = URLSafeTimedSerializer('tokenrandomizer')
 
-@app.route("/email_confirmation", methods = ["GET", "POST"])
-def index():
+@app.route("/email_confirmation", methods = ["POST"])
+def send_email():
     message_query = MessageQuery()
-    token_query = TokenQuery()
 
     message_query.subject = request.json['subject']
     message_query.recipients = request.json['recipients']
@@ -36,7 +35,6 @@ def index():
     message_query.bcc = (None if request.json["bcc"] is 0 else request.json["bcc"])
     message_query.attachments = (None if request.json["attachments"] is 0 else request.json["attachments"])
 
-    token_query.age = request.json['age']
     token = generate_token(message_query.recipients)
 
     #link = url_for('confirm_email', token = token, _external = True)
@@ -53,7 +51,37 @@ def index():
         bcc = message_query.bcc
     )
     
-    return '<h1>The email you entered is {}. The token is {}'.format(message_query.recipients, token)
+    return 'Email is sent to {}!'.format(message_query.recipients)
+
+@app.route("/reset_password", methods = ["POST"])
+def send_email():
+    message_query = MessageQuery()
+
+    message_query.subject = request.json['subject']
+    message_query.recipients = request.json['recipients']
+    message_query.html = (None if request.json["html"] is 0 else request.json["html"])
+    message_query.sender = request.json['sender']
+    message_query.cc = (None if request.json["cc"] is 0 else request.json["cc"])
+    message_query.bcc = (None if request.json["bcc"] is 0 else request.json["bcc"])
+    message_query.attachments = (None if request.json["attachments"] is 0 else request.json["attachments"])
+
+    token = generate_token(message_query.recipients)
+
+    #link = url_for('confirm_email', token = token, _external = True)
+    generate_mail(
+        mail,
+        token,
+        subject = message_query.subject,
+        recipients = message_query.recipients,
+        #html = 'Your activation link is {}'.format(link),
+        html = message_query.html,
+        sender = message_query.sender,
+        attachments = message_query.attachments,
+        cc = message_query.cc,
+        bcc = message_query.bcc
+    )
+    
+    return 'Email is sent to {}!'.format(message_query.recipients)
 
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
