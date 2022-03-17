@@ -1,6 +1,6 @@
 from flask import Flask, render_template, url_for, request
 from flask_mail import Mail, Message
-from apps.models.model import MessageQuery, TokenQuery
+from apps.models.model import MessageQuery
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
 from apps.controllers.mail_controller import generate_mail, generate_token
@@ -24,7 +24,7 @@ mail = Mail(app)
 s = URLSafeTimedSerializer('tokenrandomizer')
 
 @app.route("/email_confirmation", methods = ["POST"])
-def send_email():
+def send_email_confirmation():
     message_query = MessageQuery()
 
     message_query.subject = request.json['subject']
@@ -39,8 +39,9 @@ def send_email():
 
     #link = url_for('confirm_email', token = token, _external = True)
     generate_mail(
-        mail,
-        token,
+        mail = mail,
+        token = token,
+        type = "account_confirmation",
         subject = message_query.subject,
         recipients = message_query.recipients,
         #html = 'Your activation link is {}'.format(link),
@@ -54,7 +55,7 @@ def send_email():
     return 'Email is sent to {}!'.format(message_query.recipients)
 
 @app.route("/reset_password", methods = ["POST"])
-def send_email():
+def send_reset_password():
     message_query = MessageQuery()
 
     message_query.subject = request.json['subject']
@@ -69,8 +70,9 @@ def send_email():
 
     #link = url_for('confirm_email', token = token, _external = True)
     generate_mail(
-        mail,
-        token,
+        mail = mail,
+        token = token,
+        type = "reset_password",
         subject = message_query.subject,
         recipients = message_query.recipients,
         #html = 'Your activation link is {}'.format(link),
