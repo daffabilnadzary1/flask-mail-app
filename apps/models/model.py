@@ -11,4 +11,4 @@ class MessageQuery(BaseModel):
     attachments: list = None
 
 class TokenQuery(BaseModel):
-    age: int
+    age: int = 60
