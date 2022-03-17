@@ -1,6 +1,6 @@
 from flask import Flask, render_template, url_for, request
 from flask_mail import Mail, Message
-from apps.models.model import MessageQuery
+from apps.models.model import MessageQuery, TokenQuery
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
 app = Flask(__name__)
@@ -13,38 +13,42 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 #app.config['MAIL_DEBUG'] = True
 app.config['MAIL_USERNAME'] = 'daffabilnadzary1@gmail.com'
-app.config['MAIL_PASSWORD'] = 'jctwpcjsizzapyub'
+app.config['MAIL_PASSWORD'] = ''
 app.config['MAIL_DEFAULT_SENDER'] = None
 app.config['MAIL_MAX_EMAILS'] = None
 #app.config['MAIL_SUPPRESS_SEND'] = False
 app.config['MAIL_ASCII_ATTACHMENTS'] = False
 
 mail = Mail(app)
-s = URLSafeTimedSerializer('tokenrandomizer')
 
 @app.route("/email_confirmation", methods = ["GET", "POST"])
 def index():
-    # if request.method == 'GET':
-    #     return '<form action = "/" method = "POST"><input name = "email"><input type = "submit"></form>'
-    
-    # email = request.form['email']
-    
     message_query = MessageQuery()
+    token_query = TokenQuery()
 
     message_query.subject = request.json['subject']
     message_query.recipients = request.json['recipients']
     message_query.html = request.json['html']
     message_query.sender = request.json['sender']
+    message_query.cc = request.json['cc']
+    message_query.bcc = request.json['bcc']
+    message_query.attachments = request.json['attachments']
 
+    token_query.age = request.json['age']
+    s = URLSafeTimedSerializer('tokenrandomizer', max_age = token_query.age)
     token = s.dumps(message_query.recipients[0], salt = 'email-confirm')
+
     link = url_for('confirm_email', token = token, _external = True)
+
     msg = Message(
         subject = message_query.subject,
         recipients = message_query.recipients,
         #html = 'Your activation link is {}'.format(link),
         html = message_query.html.format(link),
         sender = message_query.sender,
-        #attachments = message_query.attachments
+        attachments = message_query.attachments,
+        cc = message_query.cc,
+        bcc = message_query.bcc
     )
     
     mail.send(msg)
