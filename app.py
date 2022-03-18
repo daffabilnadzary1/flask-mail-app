@@ -15,7 +15,7 @@ app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = 'daffabilnadzary1@gmail.com'
-app.config['MAIL_PASSWORD'] = 'jctwpcjsizzapyub'
+app.config['MAIL_PASSWORD'] = None
 app.config['MAIL_DEFAULT_SENDER'] = None
 app.config['MAIL_MAX_EMAILS'] = None
 app.config['MAIL_ASCII_ATTACHMENTS'] = False
@@ -29,22 +29,20 @@ def send_email_confirmation():
 
     message_query.subject = request.json['subject']
     message_query.recipients = request.json['recipients']
-    message_query.html = (None if request.json["html"] is 0 else request.json["html"])
+    message_query.html = (None if request.json["html"] == 0 else request.json["html"])
     message_query.sender = request.json['sender']
-    message_query.cc = (None if request.json["cc"] is 0 else request.json["cc"])
-    message_query.bcc = (None if request.json["bcc"] is 0 else request.json["bcc"])
-    message_query.attachments = (None if request.json["attachments"] is 0 else request.json["attachments"])
+    message_query.cc = (None if request.json["cc"] == 0 else request.json["cc"])
+    message_query.bcc = (None if request.json["bcc"] == 0 else request.json["bcc"])
+    message_query.attachments = (None if request.json["attachments"] == 0 else request.json["attachments"])
 
     token = generate_token(message_query.recipients)
 
-    #link = url_for('confirm_email', token = token, _external = True)
     generate_mail(
         mail = mail,
         token = token,
         type = "account_confirmation",
         subject = message_query.subject,
         recipients = message_query.recipients,
-        #html = 'Your activation link is {}'.format(link),
         html = message_query.html,
         sender = message_query.sender,
         attachments = message_query.attachments,
@@ -60,22 +58,20 @@ def send_reset_password():
 
     message_query.subject = request.json['subject']
     message_query.recipients = request.json['recipients']
-    message_query.html = (None if request.json["html"] is 0 else request.json["html"])
+    message_query.html = (None if request.json["html"] == 0 else request.json["html"])
     message_query.sender = request.json['sender']
-    message_query.cc = (None if request.json["cc"] is 0 else request.json["cc"])
-    message_query.bcc = (None if request.json["bcc"] is 0 else request.json["bcc"])
-    message_query.attachments = (None if request.json["attachments"] is 0 else request.json["attachments"])
+    message_query.cc = (None if request.json["cc"] == 0 else request.json["cc"])
+    message_query.bcc = (None if request.json["bcc"] == 0 else request.json["bcc"])
+    message_query.attachments = (None if request.json["attachments"] == 0 else request.json["attachments"])
 
     token = generate_token(message_query.recipients)
 
-    #link = url_for('confirm_email', token = token, _external = True)
     generate_mail(
         mail = mail,
         token = token,
         type = "reset_password",
         subject = message_query.subject,
         recipients = message_query.recipients,
-        #html = 'Your activation link is {}'.format(link),
         html = message_query.html,
         sender = message_query.sender,
         attachments = message_query.attachments,
